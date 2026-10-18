@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LIFE GAME — Stark Protocol v2.3</title>
+<style>
+:root{--bg:#07111e;--panel:#101f31;--panel2:#14283d;--cyan:#5de1ff;--text:#eef8ff;--muted:#9ab2c7;--gold:#ffd166;--line:#29425a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#12304a 0,#07111e 55%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:900px;margin:auto;padding:24px 16px 48px}.eyebrow{color:var(--cyan);letter-spacing:.16em;font-size:.78rem;font-weight:800}
+h1{font-size:clamp(2rem,7vw,3.3rem);line-height:1.05;margin:.35rem 0}.sub{color:var(--muted);margin-top:0}.panel{background:linear-gradient(145deg,var(--panel),#0c1928);border:1px solid var(--line);border-radius:18px;padding:18px;margin:16px 0;box-shadow:0 12px 30px #0003}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stat{background:var(--panel2);border-radius:12px;padding:12px}.label{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.value{font-size:1.6rem;font-weight:800}.bar{height:10px;background:#24394d;border-radius:99px;overflow:hidden;margin:10px 0}.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#22b9f1,var(--cyan));transition:width .25s}
+h2{font-size:1.2rem;margin:0 0 12px}.mission,.milestone{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}.mission:last-child,.milestone:last-child{border-bottom:0}.mission p{margin:3px 0 0;color:var(--muted);font-size:.9rem}.reward{white-space:nowrap;color:var(--cyan);font-weight:800}
+button{border:0;border-radius:10px;padding:10px 13px;background:var(--cyan);color:#03121d;font-weight:800;cursor:pointer}button:disabled{background:#304355;color:#9ab2c7;cursor:not-allowed}.secondary{background:#22384d;color:var(--text);border:1px solid #38516a}.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:3px 9px;font-size:.78rem;color:var(--muted)}.status{font-size:.88rem;color:var(--muted)}.done{color:var(--gold)}.note{font-size:.85rem;color:var(--muted)}.achievement{background:#332c18;border:1px solid #8b7130;border-radius:12px;padding:12px;margin-top:10px}.achievement strong{color:var(--gold)}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:span 2}.mission{align-items:flex-start}.mission button{padding:9px;font-size:.85rem}}
+</style>
+</head>
+<body><main>
+<div class="eyebrow">PERSONAL PROGRESSION SYSTEM / V2.3</div>
+<h1>LIFE GAME</h1><p class="sub">STARK PROTOCOL · Mission Control</p>
+<section class="panel" id="accountPanel">
+<h2>🔐 Player Account / Supabase</h2>
+<p class="note">Connect your project using its Project URL and Publishable key. Never enter a secret or service_role key here.</p>
+<label for="sbUrl" class="status">Project URL</label>
+<input id="sbUrl" type="url" autocomplete="url" value="https://btnselbzmelkuttatdfr.supabase.co" placeholder="https://your-project.supabase.co" style="width:100%;padding:12px;margin:5px 0 12px;border-radius:10px;border:1px solid var(--line);background:#07111e;color:var(--text)">
+<label for="sbKey" class="status">Publishable key</label>
+<input id="sbKey" type="password" autocomplete="off" placeholder="sb_publishable_..." style="width:100%;padding:12px;margin:5px 0 12px;border-radius:10px;border:1px solid var(--line);background:#07111e;color:var(--text)">
+<label for="authEmail" class="status">Email</label>
+<input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" style="width:100%;padding:12px;margin:5px 0 12px;border-radius:10px;border:1px solid var(--line);background:#07111e;color:var(--text)">
+<label for="authPassword" class="status">Password</label>
+<input id="authPassword" type="password" autocomplete="current-password" placeholder="At least 6 characters" style="width:100%;padding:12px;margin:5px 0 12px;border-radius:10px;border:1px solid var(--line);background:#07111e;color:var(--text)">
+<div class="actions"><button id="connectSupabase">Connect</button><button class="secondary" id="signUp">Create account</button><button class="secondary" id="signIn">Log in</button><button class="secondary" id="signOut">Log out</button></div>
+<p id="connectionStatus" class="status" role="status" aria-live="polite">Not connected yet. Your Project URL is filled in. Add your Publishable key, then tap Connect.</p>
+<p class="note">This phase connects Supabase authentication only. XP still saves in this browser until cloud-save tables and policies are connected in a later step. Keep your key private where possible; the publishable key is designed for browser use when Row Level Security is configured correctly.</p>
+</section>
+<section class="panel">
+  <div class="stats">
+    <div class="stat"><div class="label">Player level</div><div class="value" id="level">1</div><div class="status" id="rank">Rookie Operative</div></div>
+    <div class="stat"><div class="label">Total XP</div><div class="value" id="xp">0</div><div class="status">Lifetime experience</div></div>
+    <div class="stat"><div class="label">Daily streak 🔥</div><div class="value"><span id="streak">0</span> days</div><div class="status">Best: <span id="best">0</span></div></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;gap:12px;margin-top:16px"><strong>Next level</strong><span class="status" id="levelText">0 / 100 XP</span></div>
+  <div class="bar"><span id="levelBar"></span></div>
+</section>
+<section class="panel">
+<h2>🎯 Daily Mission Control</h2><p class="note">Each mission can be claimed once per 24 hours. Complete at least one mission on a calendar day to build your streak.</p>
+<div id="missions"></div>
+</section>
+<section class="panel">
+<h2>🏆 Streak Milestones</h2>
+<div id="milestones"></div>
+<p class="note">Milestone bonuses are awarded once per save profile. Missing a calendar day resets the current streak, but never removes XP or your best streak.</p>
+<div id="loyalty"></div>
+</section>
+<section class="panel">
+<h2>📟 Activity Log</h2><div id="log" class="status">No activity yet.</div>
+<div class="actions"><button class="secondary" id="export">Export save</button><button class="secondary" id="import">Import save</button><button class="secondary" id="reset">Reset progress</button><input type="file" id="file" accept="application/json" hidden></div>
+<p class="note">Progress is saved in this browser on this device. Export a backup before clearing browser data. This prototype does not yet sync to other devices or use server-side anti-cheat.</p>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const KEY='lifeGameStarkProtocol_v22';
+const missionDefs=[
+{id:'study15',title:'Study Protocol',desc:'Review notes or practise a school topic for 15 minutes.',xp:15},
+{id:'workout',title:'Physical Training',desc:'Complete a comfortable, age-appropriate movement session.',xp:25},
+{id:'skill',title:'Intelligence Upgrade',desc:'Practise a useful skill for a focused session.',xp:20},
+{id:'homework',title:'Assignment Complete',desc:'Make meaningful progress on one homework task.',xp:35}
+];
+const milestoneDefs=[{days:5,xp:100},{days:10,xp:200},{days:20,xp:500},{days:30,xp:500,achievement:'Loyalty'}];
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const fresh=()=>({xp:0,streak:0,best:0,lastStreakDay:null,missionClaims:{},awardedMilestones:[],achievements:[],log:[]});
+let state=load();
+function load(){try{return {...fresh(),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return fresh()}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
+function dateDiff(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000)}
+function levelInfo(xp){let level=1,need=100,total=0;while(xp>=total+need){total+=need;level++;need=100+(level-1)*50}return {level,into:xp-total,need,total}}
+function addXP(n,reason){state.xp+=n;state.log.unshift(`${new Date().toLocaleString()} — +${n} XP: ${reason}`);state.log=state.log.slice(0,30)}
+function updateStreak(){
+ const d=today();
+ if(state.lastStreakDay===d)return;
+ if(!state.lastStreakDay){state.streak=1}
+ else {const gap=dateDiff(state.lastStreakDay,d);if(gap===1)state.streak=Math.max(1,state.streak+1);else if(gap>1)state.streak=1;else return}
+ state.lastStreakDay=d;state.best=Math.max(state.best,state.streak);
+ for(const m of milestoneDefs){
+  if(state.streak>=m.days&&!state.awardedMilestones.includes(m.days)){
+   state.awardedMilestones.push(m.days);addXP(m.xp,`${m.days}-day streak milestone`);
+   if(m.achievement&&!state.achievements.includes(m.achievement)){state.achievements.push(m.achievement)}
+  }
+ }
+}
+function claim(id){
+ const now=Date.now(),last=state.missionClaims[id]||0;
+ if(now-last<86400000)return;
+ state.missionClaims[id]=now;addXP(missionDefs.find(m=>m.id===id).xp,missionDefs.find(m=>m.id===id).title);
+ updateStreak();save();
+}
+function render(){
+ const li=levelInfo(state.xp);document.getElementById('level').textContent=li.level;document.getElementById('xp').textContent=state.xp;
+ document.getElementById('rank').textContent=li.level>=10?'Elite Operative':li.level>=5?'Field Specialist':'Rookie Operative';
+ document.getElementById('streak').textContent=state.streak;document.getElementById('best').textContent=state.best;
+ document.getElementById('levelText').textContent=`${li.into} / ${li.need} XP`;document.getElementById('levelBar').style.width=`${Math.min(100,li.into/li.need*100)}%`;
+ document.getElementById('missions').innerHTML=missionDefs.map(m=>{const left=Math.max(0,86400000-(Date.now()-(state.missionClaims[m.id]||0)));const ready=left===0;return `<div class="mission"><div><strong>${m.title}</strong><p>${m.desc}</p><span class="reward">+${m.xp} XP</span><div class="status">${ready?'Available now':`Available in ${fmt(left)}`}</div></div><button ${ready?'':'disabled'} onclick="claim('${m.id}')">${ready?'Claim XP':'Locked'}</button></div>`}).join('');
+ document.getElementById('milestones').innerHTML=milestoneDefs.map(m=>`<div class="milestone"><div><strong>${m.days}-day streak</strong><div class="status">${m.achievement?'Bonus XP + Loyalty achievement':'Bonus XP reward'}</div></div><div style="text-align:right"><div class="reward">+${m.xp} XP</div><span class="pill ${state.awardedMilestones.includes(m.days)?'done':''}">${state.awardedMilestones.includes(m.days)?'UNLOCKED':'LOCKED'}</span></div></div>`).join('');
+ document.getElementById('loyalty').innerHTML=state.achievements.includes('Loyalty')?'<div class="achievement">🏅 <strong>LOYALTY ACHIEVEMENT UNLOCKED</strong><div class="status">Reached a 30-day daily streak milestone.</div></div>':'';
+ document.getElementById('log').innerHTML=state.log.length?state.log.map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)">${esc(x)}</div>`).join(''):'No activity yet.';
+}
+function fmt(ms){const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);return `${h}h ${m}m ${s}s`}
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+document.getElementById('export').onclick=()=>{const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.href=url;a.download='life-game-save.json';a.click();URL.revokeObjectURL(url)};
+document.getElementById('import').onclick=()=>document.getElementById('file').click();
+document.getElementById('file').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;const d=JSON.parse(await f.text());if(typeof d.xp!=='number'||!d.missionClaims)throw Error();state={...fresh(),...d};save();alert('Save imported.')}catch{alert('That save file could not be imported.')}e.target.value=''};
+document.getElementById('reset').onclick=()=>{if(confirm('Reset all LIFE GAME progress on this browser? Export a backup first if needed.')){state=fresh();save()}};
+// Supabase setup: values are entered locally in the Account panel.
+let supabaseClient = null;
+const statusEl = document.getElementById('connectionStatus');
+const setStatus = (message) => { statusEl.textContent = message; };
+function getSupabaseConfig(){
+  const url = document.getElementById('sbUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('sbKey').value.trim();
+  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) throw new Error('Check the Project URL. It should look like https://your-project.supabase.co');
+  if(!key || key.toLowerCase().includes('service_role') || key.toLowerCase().includes('secret')) throw new Error('Enter your Publishable key only. Do not use a secret or service_role key.');
+  return {url,key};
+}
+document.getElementById('connectSupabase').onclick = async () => {
+  try {
+    if(!window.supabase || !window.supabase.createClient) throw new Error('Supabase library did not load. Check your internet connection and reload this file.');
+    const cfg=getSupabaseConfig();
+    supabaseClient=window.supabase.createClient(cfg.url,cfg.key);
+    const {data,error}=await supabaseClient.auth.getSession();
+    if(error) throw error;
+    setStatus(data.session ? `Connected. Logged in as ${data.session.user.email}.` : 'Connected to Supabase. Create an account or log in.');
+  } catch(e) { setStatus(e.message || 'Connection failed. Check the URL and publishable key.'); }
+};
+document.getElementById('signUp').onclick = async () => {
+  try {
+    if(!supabaseClient) throw new Error('Tap Connect first.');
+    const email=document.getElementById('authEmail').value.trim();
+    const password=document.getElementById('authPassword').value;
+    if(!email || password.length<6) throw new Error('Enter a valid email and a password of at least 6 characters.');
+    const {data,error}=await supabaseClient.auth.signUp({email,password});
+    if(error) throw error;
+    setStatus(data.session ? 'Account created and logged in.' : 'Account request created. Check your email for a confirmation link if email confirmation is enabled.');
+  } catch(e) { setStatus(e.message || 'Account creation failed.'); }
+};
+document.getElementById('signIn').onclick = async () => {
+  try {
+    if(!supabaseClient) throw new Error('Tap Connect first.');
+    const email=document.getElementById('authEmail').value.trim();
+    const password=document.getElementById('authPassword').value;
+    if(!email || !password) throw new Error('Enter your email and password.');
+    const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+    if(error) throw error;
+    setStatus(`Logged in as ${data.user.email}.`);
+  } catch(e) { setStatus(e.message || 'Login failed.'); }
+};
+document.getElementById('signOut').onclick = async () => {
+  try { if(!supabaseClient) throw new Error('Tap Connect first.'); const {error}=await supabaseClient.auth.signOut(); if(error) throw error; setStatus('Logged out.'); }
+  catch(e) { setStatus(e.message || 'Logout failed.'); }
+};
+render();setInterval(render,1000);
+</script></body></html>
